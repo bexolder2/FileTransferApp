@@ -1,0 +1,41 @@
+# Build outputs
+**/bin/
+**/obj/
+artifacts/
+bin/
+
+# User/runtime app data
+**/settings.json
+**/tls-server.pfx
+
+# Test output
+TestResults/
+*.trx
+*.coverage
+coverage/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Logs
+*.log
+
+# IDE/editor
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Installer artifacts
+*.msi
+*.deb
+*.zip

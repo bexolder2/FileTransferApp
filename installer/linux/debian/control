@@ -1,0 +1,9 @@
+Package: file-transfer-app
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: File Transfer Team <devnull@example.com>
+Depends: libc6, libssl3
+Description: Cross-platform desktop app for secure LAN file transfer.
+ Uses TCP+TLS streaming with trust-on-first-use and protocol activation.

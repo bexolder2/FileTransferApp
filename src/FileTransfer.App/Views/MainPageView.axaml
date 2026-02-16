@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="using:FileTransfer.ViewModels"
+             x:DataType="viewModels:MainPageViewModel"
+             x:Class="FileTransfer.App.Views.MainPageView"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="600">
+  <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="Add file" Command="{Binding AddFileCommand}" />
+      <Button Content="Add folder" Command="{Binding AddFolderCommand}" />
+      <Button Content="Remove selected" Command="{Binding RemoveSelectedCommand}" />
+      <Button Content="Clear queue" Command="{Binding ClearQueueCommand}" />
+    </StackPanel>
+
+    <Button Grid.Row="1"
+            HorizontalAlignment="Left"
+            Content="{Binding UploadButtonText}"
+            Command="{Binding ToggleUploadCommand}" />
+
+    <TreeView Grid.Row="2"
+              ItemsSource="{Binding Queue}"
+              SelectedItem="{Binding SelectedQueueItem, Mode=TwoWay}">
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding DisplayName}" />
+            <TextBlock Text="{Binding IsFolder, StringFormat='Folder: {0}'}"
+                       Opacity="0.6" />
+          </StackPanel>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+
+    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <ProgressBar Minimum="0"
+                   Maximum="{Binding TotalItems}"
+                   Value="{Binding CompletedItems}" />
+      <StackPanel Grid.Column="1" Spacing="2">
+        <TextBlock HorizontalAlignment="Right"
+                   Text="{Binding ProgressText}" />
+        <TextBlock HorizontalAlignment="Right"
+                   Opacity="0.7"
+                   Text="{Binding ByteProgressText}" />
+      </StackPanel>
+    </Grid>
+
+    <TextBlock Grid.Row="4"
+               Text="{Binding StatusText}"
+               Opacity="0.8" />
+  </Grid>
+</UserControl>

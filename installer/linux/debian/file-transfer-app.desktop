@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=File Transfer App
+Comment=Secure LAN file transfer
+Exec=/opt/file-transfer-app/FileTransfer.App %u
+Terminal=false
+Categories=Utility;Network;
+MimeType=x-scheme-handler/filetransfer;

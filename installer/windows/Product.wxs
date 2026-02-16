@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="File Transfer App"
+           Manufacturer="File Transfer Team"
+           Version="1.0.0"
+           UpgradeCode="A8C3D0E9-9854-4C13-8F66-E2C39A3AA201"
+           Language="1033"
+           Codepage="1252">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of File Transfer App is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="File Transfer App" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="File Transfer App" />
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="File Transfer App" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="ProtocolRegistration" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppExeComponent" Guid="8A60B2A7-D39E-4E2E-B3CC-6D5EABBE6601">
+        <File Id="AppExeFile" Source="$(var.PublishDir)\FileTransfer.App.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+    <ComponentGroup Id="AppFiles">
+      <ComponentRef Id="AppExeComponent" />
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="ProgramMenuDir">
+      <Component Id="StartMenuShortcut" Guid="8D88DA1A-8B34-4D3E-9636-76F58A5251B4">
+        <Shortcut Id="StartMenuShortcutFileTransfer"
+                  Name="File Transfer App"
+                  Description="Secure file transfer over LAN"
+                  Target="[INSTALLFOLDER]FileTransfer.App.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ProgramMenuDirRemove" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\FileTransferApp" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="ProtocolRegistration" Guid="89A0C991-7E21-4D44-B7F6-E52CB0A35254">
+        <RegistryKey Root="HKCU" Key="Software\Classes\filetransfer">
+          <RegistryValue Name="" Value="URL:File Transfer Protocol" Type="string" />
+          <RegistryValue Name="URL Protocol" Value="" Type="string" />
+          <RegistryKey Key="shell\open\command">
+            <RegistryValue Name="" Value='"[INSTALLFOLDER]FileTransfer.App.exe" "%1"' Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryValue Root="HKCU" Key="Software\FileTransferApp" Name="ProtocolRegistered" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

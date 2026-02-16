@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="using:FileTransfer.ViewModels"
+             x:Class="FileTransfer.App.Views.SettingsPageView"
+             x:DataType="viewModels:SettingsPageViewModel"
+             mc:Ignorable="d"
+             d:DesignWidth="900"
+             d:DesignHeight="600">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Border HorizontalAlignment="Center" MaxWidth="560" Padding="16">
+      <StackPanel Spacing="16">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Target device" FontWeight="SemiBold" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Detect devices" Command="{Binding DetectDevicesCommand}" />
+            <ComboBox Width="280"
+                      ItemsSource="{Binding DetectedDevices}"
+                      SelectedItem="{Binding SelectedDevice}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="Re-trust selected"
+                    Command="{Binding RetrustSelectedDeviceCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding SecurityStatus}"
+                     Opacity="0.7" />
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="Maximum parallel uploads" FontWeight="SemiBold" />
+          <NumericUpDown Width="140"
+                         Minimum="1"
+                         Maximum="16"
+                         Value="{Binding MaximumParallelUploads}" />
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="Download folder" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding DownloadFolder}" />
+            <Button Grid.Column="1"
+                    Content="Browse"
+                    Command="{Binding BrowseDownloadFolderCommand}" />
+          </Grid>
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="Theme" FontWeight="SemiBold" />
+          <StackPanel Orientation="Horizontal" Spacing="16">
+            <RadioButton GroupName="theme"
+                         Content="System"
+                         IsChecked="{Binding IsSystemThemeSelected}" />
+            <RadioButton GroupName="theme"
+                         Content="Light"
+                         IsChecked="{Binding IsLightThemeSelected}" />
+            <RadioButton GroupName="theme"
+                         Content="Dark"
+                         IsChecked="{Binding IsDarkThemeSelected}" />
+          </StackPanel>
+        </StackPanel>
+
+        <Button HorizontalAlignment="Left"
+                Content="Save settings"
+                Command="{Binding SaveCommand}" />
+      </StackPanel>
+    </Border>
+  </ScrollViewer>
+</UserControl>

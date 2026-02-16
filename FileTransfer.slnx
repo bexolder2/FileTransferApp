@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FileTransfer.App/FileTransfer.App.csproj" />
+    <Project Path="src/FileTransfer.Core/FileTransfer.Core.csproj" />
+    <Project Path="src/FileTransfer.Infrastructure/FileTransfer.Infrastructure.csproj" />
+    <Project Path="src/FileTransfer.ViewModels/FileTransfer.ViewModels.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/FileTransfer.IntegrationTests/FileTransfer.IntegrationTests.csproj" />
+    <Project Path="test/FileTransfer.UnitTests/FileTransfer.UnitTests.csproj" />
+  </Folder>
+</Solution>
