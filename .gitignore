@@ -25,6 +25,7 @@ coverage/
 # IDE/editor
 .vs/
 .idea/
+.cursor/
 *.suo
 *.user
 *.userosscache
