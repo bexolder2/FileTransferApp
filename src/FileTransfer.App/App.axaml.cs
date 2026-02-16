@@ -44,6 +44,7 @@ public partial class App : Application
             await _serviceProvider.GetRequiredService<ITransferReceiverHost>().StartAsync(CancellationToken.None);
             _serviceProvider.GetRequiredService<WindowContext>().MainWindow = mainWindow;
             desktop.MainWindow = mainWindow;
+            mainWindow.Show();
             desktop.Exit += OnDesktopExit;
         }
 
@@ -65,6 +66,7 @@ public partial class App : Application
     {
         ServiceCollection services = new();
         services.AddSingleton(this);
+        services.AddSingleton<Application>(this);
         services.AddSingleton<WindowContext>();
 
         services.AddSingleton(new TransferProtocolOptions());
