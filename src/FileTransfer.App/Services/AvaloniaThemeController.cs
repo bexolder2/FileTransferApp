@@ -8,10 +8,12 @@ namespace FileTransfer.App.Services;
 public sealed class AvaloniaThemeController : IThemeController
 {
     private readonly Application _application;
+    private readonly WindowContext _windowContext;
 
-    public AvaloniaThemeController(Application application)
+    public AvaloniaThemeController(Application application, WindowContext windowContext)
     {
         _application = application;
+        _windowContext = windowContext;
     }
 
     public void ApplyTheme(AppThemeMode themeMode)
@@ -22,5 +24,14 @@ public sealed class AvaloniaThemeController : IThemeController
             AppThemeMode.Dark => ThemeVariant.Dark,
             _ => ThemeVariant.Default
         };
+
+        bool useDarkTitleBar = themeMode switch
+        {
+            AppThemeMode.Dark => true,
+            AppThemeMode.Light => false,
+            _ => _application.ActualThemeVariant == ThemeVariant.Dark
+        };
+
+        WindowsTitleBarThemeSync.Apply(_windowContext.MainWindow, useDarkTitleBar);
     }
 }

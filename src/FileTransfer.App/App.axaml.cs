@@ -45,6 +45,7 @@ public partial class App : Application
             _serviceProvider.GetRequiredService<WindowContext>().MainWindow = mainWindow;
             desktop.MainWindow = mainWindow;
             mainWindow.Show();
+            _serviceProvider.GetRequiredService<IThemeController>().ApplyTheme(settingsPageViewModel.SelectedThemeMode);
             desktop.Exit += OnDesktopExit;
         }
 
