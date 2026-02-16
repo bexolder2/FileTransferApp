@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FileTransfer.Core.Contracts;
@@ -12,6 +13,7 @@ public sealed partial class MainPageViewModel : ViewModelBase
     private readonly IFolderPickerService _folderPickerService;
     private readonly ISettingsService _settingsService;
     private readonly ITransferOrchestrator _transferOrchestrator;
+    private readonly HashSet<string> _queuedFilePaths = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _uploadCancellation;
 
     [ObservableProperty]
@@ -46,12 +48,14 @@ public sealed partial class MainPageViewModel : ViewModelBase
         _settingsService = settingsService;
         _transferOrchestrator = transferOrchestrator;
         Queue = new ObservableCollection<TransferQueueItem>();
+        QueueView = new ObservableCollection<TransferQueueItem>();
         Queue.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasQueueItems));
         TotalItems = 0;
         CompletedItems = 0;
     }
 
     public ObservableCollection<TransferQueueItem> Queue { get; }
+    public ObservableCollection<TransferQueueItem> QueueView { get; }
 
     public bool HasQueueItems => Queue.Count > 0;
 
@@ -65,9 +69,10 @@ public sealed partial class MainPageViewModel : ViewModelBase
     private async Task AddFileAsync(CancellationToken cancellationToken)
     {
         IReadOnlyList<string> files = await _filePickerService.PickFilesAsync(cancellationToken);
+        int addedCount = 0;
         foreach (string filePath in files)
         {
-            if (Queue.Any(item => string.Equals(item.FullPath, filePath, StringComparison.OrdinalIgnoreCase)))
+            if (_queuedFilePaths.Contains(filePath))
             {
                 continue;
             }
@@ -76,11 +81,17 @@ public sealed partial class MainPageViewModel : ViewModelBase
             {
                 DisplayName = Path.GetFileName(filePath),
                 FullPath = filePath,
-                IsFolder = false
+                IsFolder = false,
+                IsSelected = true,
+                RelativePath = Path.GetFileName(filePath)
             });
+            RegisterSelectionTracking(Queue[^1]);
+            _queuedFilePaths.Add(filePath);
+            addedCount++;
         }
 
-        StatusText = Queue.Count > 0 ? "Queue updated." : "No files selected.";
+        RebuildQueueView();
+        StatusText = addedCount > 0 ? "Queue updated." : "No new files selected.";
     }
 
     [RelayCommand]
@@ -92,24 +103,59 @@ public sealed partial class MainPageViewModel : ViewModelBase
             return;
         }
 
-        if (Queue.Any(item => string.Equals(item.FullPath, folderPath, StringComparison.OrdinalIgnoreCase)))
+        string folderName = Path.GetFileName(folderPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        TransferQueueItem folderNode = new()
         {
+            DisplayName = folderName,
+            FullPath = folderPath,
+            IsFolder = true,
+            IsSelected = true
+        };
+
+        int addedCount = 0;
+        foreach (string filePath in Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories))
+        {
+            if (_queuedFilePaths.Contains(filePath))
+            {
+                continue;
+            }
+
+            string relativeInsideFolder = Path.GetRelativePath(folderPath, filePath);
+            folderNode.Children.Add(new TransferQueueItem
+            {
+                DisplayName = relativeInsideFolder,
+                FullPath = filePath,
+                IsFolder = false,
+                IsSelected = true,
+                RelativePath = Path.Combine(folderName, relativeInsideFolder)
+            });
+            _queuedFilePaths.Add(filePath);
+            addedCount++;
+        }
+
+        if (addedCount == 0)
+        {
+            StatusText = "No new files found in selected folder.";
             return;
         }
 
-        Queue.Add(new TransferQueueItem
-        {
-            DisplayName = Path.GetFileName(folderPath),
-            FullPath = folderPath,
-            IsFolder = true
-        });
+        RegisterSelectionTracking(folderNode);
+        Queue.Add(folderNode);
+        RebuildQueueView();
         StatusText = "Queue updated.";
     }
 
     [RelayCommand]
     private void ClearQueue()
     {
+        foreach (TransferQueueItem rootItem in Queue)
+        {
+            UnregisterSelectionTracking(rootItem);
+        }
+
         Queue.Clear();
+        QueueView.Clear();
+        _queuedFilePaths.Clear();
         CompletedItems = 0;
         TotalItems = 0;
         TransferredBytes = 0;
@@ -126,7 +172,16 @@ public sealed partial class MainPageViewModel : ViewModelBase
             return;
         }
 
-        Queue.Remove(SelectedQueueItem);
+        TransferQueueItem selectedItem = SelectedQueueItem;
+        if (!Queue.Remove(selectedItem))
+        {
+            RemoveFromTree(Queue, selectedItem);
+        }
+
+        UnregisterSelectionTracking(selectedItem);
+        RemovePathsForNode(selectedItem);
+        RemoveEmptyFolders();
+        RebuildQueueView();
         SelectedQueueItem = null;
         StatusText = "Removed selected item.";
     }
@@ -141,9 +196,10 @@ public sealed partial class MainPageViewModel : ViewModelBase
             return;
         }
 
-        if (Queue.Count == 0)
+        IReadOnlyList<TransferQueueItem> selectedFiles = GetSelectedFiles().ToArray();
+        if (selectedFiles.Count == 0)
         {
-            StatusText = "Add files or folders before starting upload.";
+            StatusText = "Select at least one file to upload.";
             return;
         }
 
@@ -171,7 +227,7 @@ public sealed partial class MainPageViewModel : ViewModelBase
 
             TransferProgressSnapshot completed = await _transferOrchestrator.UploadAsync(
                 settings.LastSelectedTargetIp,
-                Queue.ToArray(),
+                selectedFiles,
                 settings.MaximumParallelUploads,
                 progress,
                 _uploadCancellation.Token);
@@ -235,5 +291,123 @@ public sealed partial class MainPageViewModel : ViewModelBase
         }
 
         return $"{value:0.##} {suffixes[suffixIndex]}";
+    }
+
+    private IEnumerable<TransferQueueItem> EnumerateQueueItems()
+    {
+        foreach (TransferQueueItem rootItem in Queue)
+        {
+            yield return rootItem;
+            foreach (TransferQueueItem descendant in EnumerateChildren(rootItem))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
+    private static IEnumerable<TransferQueueItem> EnumerateChildren(TransferQueueItem node)
+    {
+        foreach (TransferQueueItem child in node.Children)
+        {
+            yield return child;
+            foreach (TransferQueueItem descendant in EnumerateChildren(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
+    private IEnumerable<TransferQueueItem> GetSelectedFiles() =>
+        EnumerateQueueItems().Where(item => !item.IsFolder && item.IsSelected);
+
+    private static bool RemoveFromTree(IEnumerable<TransferQueueItem> nodes, TransferQueueItem toRemove)
+    {
+        foreach (TransferQueueItem node in nodes)
+        {
+            if (node.Children.Remove(toRemove))
+            {
+                return true;
+            }
+
+            if (RemoveFromTree(node.Children, toRemove))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void RemovePathsForNode(TransferQueueItem node)
+    {
+        if (!node.IsFolder)
+        {
+            _queuedFilePaths.Remove(node.FullPath);
+            return;
+        }
+
+        foreach (TransferQueueItem child in EnumerateChildren(node))
+        {
+            if (!child.IsFolder)
+            {
+                _queuedFilePaths.Remove(child.FullPath);
+            }
+        }
+    }
+
+    private void RemoveEmptyFolders()
+    {
+        foreach (TransferQueueItem folder in Queue.Where(item => item.IsFolder && item.Children.Count == 0).ToArray())
+        {
+            UnregisterSelectionTracking(folder);
+            Queue.Remove(folder);
+        }
+    }
+
+    private void RebuildQueueView()
+    {
+        QueueView.Clear();
+        foreach (TransferQueueItem root in Queue)
+        {
+            QueueView.Add(root);
+            foreach (TransferQueueItem descendant in EnumerateChildren(root))
+            {
+                QueueView.Add(descendant);
+            }
+        }
+    }
+
+    private void RegisterSelectionTracking(TransferQueueItem rootItem)
+    {
+        rootItem.PropertyChanged += OnQueueItemPropertyChanged;
+        foreach (TransferQueueItem child in EnumerateChildren(rootItem))
+        {
+            child.PropertyChanged += OnQueueItemPropertyChanged;
+        }
+    }
+
+    private void UnregisterSelectionTracking(TransferQueueItem rootItem)
+    {
+        rootItem.PropertyChanged -= OnQueueItemPropertyChanged;
+        foreach (TransferQueueItem child in EnumerateChildren(rootItem))
+        {
+            child.PropertyChanged -= OnQueueItemPropertyChanged;
+        }
+    }
+
+    private void OnQueueItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not TransferQueueItem item ||
+            e.PropertyName != nameof(TransferQueueItem.IsSelected) ||
+            !item.IsFolder)
+        {
+            return;
+        }
+
+        // Folder toggle acts as a bulk selector for its files.
+        foreach (TransferQueueItem child in EnumerateChildren(item))
+        {
+            child.IsSelected = item.IsSelected;
+        }
     }
 }

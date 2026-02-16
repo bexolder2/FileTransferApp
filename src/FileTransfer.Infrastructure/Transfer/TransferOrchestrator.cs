@@ -80,6 +80,11 @@ public sealed class TransferOrchestrator : ITransferOrchestrator
         List<ResolvedTransferFile> files = [];
         foreach (TransferQueueItem queueItem in queueItems)
         {
+            if (!queueItem.IsSelected && !queueItem.IsFolder)
+            {
+                continue;
+            }
+
             if (!queueItem.IsFolder)
             {
                 if (!File.Exists(queueItem.FullPath))
@@ -91,9 +96,17 @@ public sealed class TransferOrchestrator : ITransferOrchestrator
                 files.Add(new ResolvedTransferFile
                 {
                     SourcePath = queueItem.FullPath,
-                    RelativePath = Path.GetFileName(queueItem.FullPath),
+                    RelativePath = string.IsNullOrWhiteSpace(queueItem.RelativePath)
+                        ? Path.GetFileName(queueItem.FullPath)
+                        : queueItem.RelativePath,
                     Length = info.Length
                 });
+                continue;
+            }
+
+            if (queueItem.Children.Count > 0)
+            {
+                files.AddRange(ResolveFiles(queueItem.Children.ToArray()));
                 continue;
             }
 

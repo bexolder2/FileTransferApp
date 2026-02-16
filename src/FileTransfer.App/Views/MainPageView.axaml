@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DesignWidth="900"
              d:DesignHeight="600">
-  <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="12">
+  <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
     <StackPanel Orientation="Horizontal" Spacing="8">
       <Button Content="Add file" Command="{Binding AddFileCommand}" />
       <Button Content="Add folder" Command="{Binding AddFolderCommand}" />
@@ -16,26 +16,28 @@
       <Button Content="Clear queue" Command="{Binding ClearQueueCommand}" />
     </StackPanel>
 
-    <Button Grid.Row="1"
-            HorizontalAlignment="Left"
-            Content="{Binding UploadButtonText}"
-            Command="{Binding ToggleUploadCommand}" />
-
-    <TreeView Grid.Row="2"
-              ItemsSource="{Binding Queue}"
-              SelectedItem="{Binding SelectedQueueItem, Mode=TwoWay}">
-      <TreeView.ItemTemplate>
-        <TreeDataTemplate>
+    <ListBox Grid.Row="1"
+             ItemsSource="{Binding QueueView}"
+             SelectedItem="{Binding SelectedQueueItem, Mode=TwoWay}">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <VirtualizingStackPanel />
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
+      <ListBox.ItemTemplate>
+        <DataTemplate>
           <StackPanel Orientation="Horizontal" Spacing="8">
+            <CheckBox IsVisible="{Binding CanSelectForUpload}"
+                      IsChecked="{Binding IsSelected, Mode=TwoWay}" />
             <TextBlock Text="{Binding DisplayName}" />
             <TextBlock Text="{Binding IsFolder, StringFormat='Folder: {0}'}"
                        Opacity="0.6" />
           </StackPanel>
-        </TreeDataTemplate>
-      </TreeView.ItemTemplate>
-    </TreeView>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
 
-    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
       <ProgressBar Minimum="0"
                    Maximum="{Binding TotalItems}"
                    Value="{Binding CompletedItems}" />
@@ -46,9 +48,14 @@
                    Opacity="0.7"
                    Text="{Binding ByteProgressText}" />
       </StackPanel>
+	
+	  <Button Grid.Column="2"
+              HorizontalAlignment="Left"
+              Content="{Binding UploadButtonText}"
+              Command="{Binding ToggleUploadCommand}" />
     </Grid>
 
-    <TextBlock Grid.Row="4"
+    <TextBlock Grid.Row="3"
                Text="{Binding StatusText}"
                Opacity="0.8" />
   </Grid>

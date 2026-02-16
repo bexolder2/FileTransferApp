@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using FileTransfer.Core.Contracts;
 using FileTransfer.Core.Models;
 using FileTransfer.Infrastructure.Transfer;
@@ -43,8 +44,8 @@ public sealed class TransferProtocolAndStreamingTests
             CapturingTransferClient transferClient = new();
             TransferOrchestrator orchestrator = new(transferClient, new TransferProtocolOptions { Port = 50505 });
 
-            List<TransferProgressSnapshot> snapshots = [];
-            Progress<TransferProgressSnapshot> progress = new(snapshot => snapshots.Add(snapshot));
+            ConcurrentQueue<TransferProgressSnapshot> snapshots = new();
+            Progress<TransferProgressSnapshot> progress = new(snapshot => snapshots.Enqueue(snapshot));
 
             TransferProgressSnapshot result = await orchestrator.UploadAsync(
                 "127.0.0.1",
@@ -57,7 +58,8 @@ public sealed class TransferProtocolAndStreamingTests
             Assert.Contains(transferClient.Files, file => file.RelativePath.Replace('\\', '/') == "source/a.txt");
             Assert.Contains(transferClient.Files, file => file.RelativePath.Replace('\\', '/') == "source/nested/b.txt");
             Assert.Equal(2, result.CompletedFiles);
-            Assert.True(snapshots.Count >= 2);
+            bool sawProgressUpdates = SpinWait.SpinUntil(() => snapshots.Count >= 2, TimeSpan.FromSeconds(1));
+            Assert.True(sawProgressUpdates);
         }
         finally
         {

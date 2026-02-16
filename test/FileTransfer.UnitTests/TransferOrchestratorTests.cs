@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using FileTransfer.Core.Contracts;
 using FileTransfer.Core.Models;
 using FileTransfer.Infrastructure.Transfer;
@@ -21,8 +22,8 @@ public sealed class TransferOrchestratorTests
             CapturingTransferClient client = new();
             TransferOrchestrator orchestrator = new(client, new TransferProtocolOptions { Port = 50505 });
 
-            List<TransferProgressSnapshot> snapshots = [];
-            Progress<TransferProgressSnapshot> progress = new(snapshot => snapshots.Add(snapshot));
+            ConcurrentQueue<TransferProgressSnapshot> snapshots = new();
+            Progress<TransferProgressSnapshot> progress = new(snapshot => snapshots.Enqueue(snapshot));
 
             TransferProgressSnapshot result = await orchestrator.UploadAsync(
                 "127.0.0.1",
@@ -35,8 +36,12 @@ public sealed class TransferOrchestratorTests
             Assert.Equal(1, result.CompletedFiles);
             Assert.Equal(4096, result.TotalBytes);
             Assert.Equal(4096, result.TransferredBytes);
-            Assert.NotEmpty(snapshots);
-            Assert.Contains(snapshots, snapshot => snapshot.CompletedFiles == 1);
+            TransferProgressSnapshot[] snapshotArray = snapshots.ToArray();
+            Assert.NotEmpty(snapshotArray);
+            bool sawCompletedSnapshot = SpinWait.SpinUntil(
+                () => snapshots.Any(snapshot => snapshot.CompletedFiles == 1),
+                TimeSpan.FromSeconds(1));
+            Assert.True(sawCompletedSnapshot);
         }
         finally
         {
