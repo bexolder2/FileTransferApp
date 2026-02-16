@@ -1,0 +1,44 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Windows 11 RadioButton: circular ring, gray when unchecked, blue when checked -->
+
+  <!-- Unchecked: thin gray border, transparent fill -->
+  <Style Selector="RadioButton /template/ Ellipse#OuterEllipse">
+    <Setter Property="Fill" Value="Transparent" />
+    <Setter Property="Stroke" Value="#8E8E8E" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+  </Style>
+
+  <!-- Checked: blue outer ring and blue inner dot -->
+  <Style Selector="RadioButton:checked /template/ Ellipse#CheckOuterEllipse">
+    <Setter Property="Stroke" Value="#0078D4" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="Fill" Value="Transparent" />
+  </Style>
+  <Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
+    <Setter Property="Fill" Value="#0078D4" />
+    <Setter Property="Stroke" Value="Transparent" />
+  </Style>
+
+  <!-- Pointer over (unchecked): slightly darker gray ring -->
+  <Style Selector="RadioButton:pointerover /template/ Ellipse#OuterEllipse">
+    <Setter Property="Stroke" Value="#6B6B6B" />
+  </Style>
+  <Style Selector="RadioButton:checked:pointerover /template/ Ellipse#CheckOuterEllipse">
+    <Setter Property="Stroke" Value="#106EBE" />
+  </Style>
+  <Style Selector="RadioButton:checked:pointerover /template/ Ellipse#CheckGlyph">
+    <Setter Property="Fill" Value="#106EBE" />
+  </Style>
+
+  <!-- Disabled: muted appearance -->
+  <Style Selector="RadioButton:disabled /template/ Ellipse#OuterEllipse">
+    <Setter Property="Stroke" Value="#C4C4C4" />
+  </Style>
+  <Style Selector="RadioButton:checked:disabled /template/ Ellipse#CheckOuterEllipse">
+    <Setter Property="Stroke" Value="#C4C4C4" />
+  </Style>
+  <Style Selector="RadioButton:checked:disabled /template/ Ellipse#CheckGlyph">
+    <Setter Property="Fill" Value="#C4C4C4" />
+  </Style>
+</Styles>

@@ -10,10 +10,10 @@
              d:DesignHeight="600">
   <Grid Margin="16" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="Add file" Command="{Binding AddFileCommand}" />
-      <Button Content="Add folder" Command="{Binding AddFolderCommand}" />
-      <Button Content="Remove selected" Command="{Binding RemoveSelectedCommand}" />
-      <Button Content="Clear queue" Command="{Binding ClearQueueCommand}" />
+      <Button Width="140" HorizontalContentAlignment="Center" Content="Add file" Command="{Binding AddFileCommand}" />
+      <Button Width="140" HorizontalContentAlignment="Center" Content="Add folder" Command="{Binding AddFolderCommand}" />
+      <Button Width="140" HorizontalContentAlignment="Center" Content="Remove selected" Command="{Binding RemoveSelectedCommand}" />
+      <Button Width="140" HorizontalContentAlignment="Center" Content="Clear queue" Command="{Binding ClearQueueCommand}" />
     </StackPanel>
 
     <ListBox Grid.Row="1"
@@ -50,7 +50,9 @@
       </StackPanel>
 	
 	  <Button Grid.Column="2"
+			  Width="140" 
               HorizontalAlignment="Left"
+			  HorizontalContentAlignment="Center" 
               Content="{Binding UploadButtonText}"
               Command="{Binding ToggleUploadCommand}" />
     </Grid>

@@ -8,6 +8,8 @@
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://FileTransfer.App/Styles/ButtonStyles.axaml" />
+        <StyleInclude Source="avares://FileTransfer.App/Styles/RadioButtonStyles.axaml" />
     </Application.Styles>
 
     <Application.DataTemplates>
