@@ -20,8 +20,9 @@ internal static class WindowsTitleBarThemeSync
     private const int WmThemeChanged = 0x031A;
     private const int WmNcActivate = 0x0086;
 
-    private static readonly SetPreferredAppModeDelegate? s_setPreferredAppMode = LoadUxThemeFunction<SetPreferredAppModeDelegate>(135);
-    private static readonly AllowDarkModeForWindowDelegate? s_allowDarkModeForWindow = LoadUxThemeFunction<AllowDarkModeForWindowDelegate>(133);
+    private static SetPreferredAppModeDelegate? s_setPreferredAppMode;
+    private static AllowDarkModeForWindowDelegate? s_allowDarkModeForWindow;
+    private static bool s_legacyFunctionsLoaded;
     private static bool s_preferredAppModeInitialized;
 
     // COLORREF uses 0x00BBGGRR.
@@ -93,6 +94,8 @@ internal static class WindowsTitleBarThemeSync
 
     private static void TryApplyLegacyWin10DarkMode(IntPtr hwnd, bool useDark)
     {
+        EnsureLegacyFunctionsLoaded();
+
         if (!s_preferredAppModeInitialized)
         {
             // Opt in once, then control dark/light per window.
@@ -101,6 +104,18 @@ internal static class WindowsTitleBarThemeSync
         }
 
         s_allowDarkModeForWindow?.Invoke(hwnd, useDark);
+    }
+
+    private static void EnsureLegacyFunctionsLoaded()
+    {
+        if (s_legacyFunctionsLoaded || !OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        s_setPreferredAppMode = LoadUxThemeFunction<SetPreferredAppModeDelegate>(135);
+        s_allowDarkModeForWindow = LoadUxThemeFunction<AllowDarkModeForWindowDelegate>(133);
+        s_legacyFunctionsLoaded = true;
     }
 
     private static TDelegate? LoadUxThemeFunction<TDelegate>(int ordinal)
