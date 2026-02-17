@@ -66,6 +66,20 @@ chmod +x ./scripts/build-debian-package.sh
 
 Output: `bin/file-transfer-app_1.0.0_amd64.deb`
 
+Install or uninstall the built package:
+
+```bash
+# Install (default version 1.0.0, or pass path to .deb)
+chmod +x ./scripts/install-debian.sh
+./scripts/install-debian.sh
+./scripts/install-debian.sh bin/file-transfer-app_1.0.0_amd64.deb
+
+# Uninstall
+chmod +x ./scripts/uninstall-debian.sh
+./scripts/uninstall-debian.sh
+./scripts/uninstall-debian.sh --purge   # also remove configuration
+```
+
 ## Protocol Registration Helpers
 
 - Windows current-user protocol registration:
@@ -90,6 +104,10 @@ chmod +x ./scripts/register-protocol-debian.sh
   - Use **Re-trust selected** in Settings and retry.
 - Activation URI does not open app:
   - Re-register protocol handlers using scripts in `scripts/`.
+- After installing the .deb, launch fails with “Could not find .../.local/bin/file-transfer-app”:
+  - An older user-level protocol registration is overriding the system app. Remove it so the installed app in `/opt/file-transfer-app` is used: `rm -f ~/.local/share/applications/file-transfer-app.desktop`
+  - If you have `update-desktop-database` (from package `desktop-file-utils`), run it on `~/.local/share/applications` to refresh the launcher cache.
+  - Or re-run the install script once to have it remove the conflicting file automatically.
 
 ## Smoke Checklist
 

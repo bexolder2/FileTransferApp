@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_DIR="/opt/file-transfer-app"
+
+case "${1:-}" in
+  remove|purge)
+    if [[ -d "$INSTALL_DIR" ]]; then
+      rm -rf "$INSTALL_DIR"
+    fi
+    ;;
+esac
+
+exit 0

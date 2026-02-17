@@ -16,7 +16,9 @@ Terminal=false
 MimeType=x-scheme-handler/${SCHEME};
 EOF
 
-update-desktop-database "$HOME/.local/share/applications" || true
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$HOME/.local/share/applications" || true
+fi
 xdg-mime default "$(basename "$DESKTOP_FILE")" "x-scheme-handler/${SCHEME}" || true
 
 echo "Registered protocol '${SCHEME}' using ${DESKTOP_FILE}"

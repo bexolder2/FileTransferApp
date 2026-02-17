@@ -23,7 +23,8 @@ mkdir -p "${PACKAGE_ROOT}/DEBIAN" "${PACKAGE_ROOT}/opt/file-transfer-app" "${PAC
 cp "${ROOT_DIR}/installer/linux/debian/control" "${PACKAGE_ROOT}/DEBIAN/control"
 cp "${ROOT_DIR}/installer/linux/debian/postinst" "${PACKAGE_ROOT}/DEBIAN/postinst"
 cp "${ROOT_DIR}/installer/linux/debian/prerm" "${PACKAGE_ROOT}/DEBIAN/prerm"
-chmod 0755 "${PACKAGE_ROOT}/DEBIAN/postinst" "${PACKAGE_ROOT}/DEBIAN/prerm"
+cp "${ROOT_DIR}/installer/linux/debian/postrm" "${PACKAGE_ROOT}/DEBIAN/postrm"
+chmod 0755 "${PACKAGE_ROOT}/DEBIAN/postinst" "${PACKAGE_ROOT}/DEBIAN/prerm" "${PACKAGE_ROOT}/DEBIAN/postrm"
 
 cp -R "${PUBLISH_DIR}/." "${PACKAGE_ROOT}/opt/file-transfer-app/"
 cp "${ROOT_DIR}/installer/linux/debian/file-transfer-app.desktop" "${PACKAGE_ROOT}/usr/share/applications/file-transfer-app.desktop"
