@@ -8,11 +8,16 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase _currentPageViewModel;
 
-    public ShellViewModel(MainPageViewModel mainPageViewModel, SettingsPageViewModel settingsPageViewModel)
+    public ShellViewModel(
+        MainPageViewModel mainPageViewModel,
+        SettingsPageViewModel settingsPageViewModel,
+        NavigationCommandsHolder navigationCommands)
     {
         MainPageViewModel = mainPageViewModel;
         SettingsPageViewModel = settingsPageViewModel;
         CurrentPageViewModel = MainPageViewModel;
+        navigationCommands.NavigateToMainCommand = NavigateToMainCommand;
+        navigationCommands.NavigateToSettingsCommand = NavigateToSettingsCommand;
     }
 
     public MainPageViewModel MainPageViewModel { get; }

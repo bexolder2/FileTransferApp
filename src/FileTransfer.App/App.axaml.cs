@@ -86,6 +86,7 @@ public partial class App : Application
         services.AddSingleton<ITransferOrchestrator, TransferOrchestrator>();
         services.AddSingleton<ITransferReceiverHost, TransferReceiverHost>();
 
+        services.AddSingleton<NavigationCommandsHolder>();
         services.AddTransient<MainPageViewModel>();
         services.AddSingleton<SettingsPageViewModel>();
         services.AddSingleton<ShellViewModel>();

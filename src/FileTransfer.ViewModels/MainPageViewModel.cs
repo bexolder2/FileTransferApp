@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FileTransfer.Core.Contracts;
@@ -13,6 +14,7 @@ public sealed partial class MainPageViewModel : ViewModelBase
     private readonly IFolderPickerService _folderPickerService;
     private readonly ISettingsService _settingsService;
     private readonly ITransferOrchestrator _transferOrchestrator;
+    private readonly NavigationCommandsHolder _navigationCommands;
     private readonly HashSet<string> _queuedFilePaths = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _uploadCancellation;
 
@@ -41,12 +43,14 @@ public sealed partial class MainPageViewModel : ViewModelBase
         IFilePickerService filePickerService,
         IFolderPickerService folderPickerService,
         ISettingsService settingsService,
-        ITransferOrchestrator transferOrchestrator)
+        ITransferOrchestrator transferOrchestrator,
+        NavigationCommandsHolder navigationCommands)
     {
         _filePickerService = filePickerService;
         _folderPickerService = folderPickerService;
         _settingsService = settingsService;
         _transferOrchestrator = transferOrchestrator;
+        _navigationCommands = navigationCommands;
         Queue = new ObservableCollection<TransferQueueItem>();
         QueueView = new ObservableCollection<TransferQueueItem>();
         Queue.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasQueueItems));
@@ -58,6 +62,8 @@ public sealed partial class MainPageViewModel : ViewModelBase
     public ObservableCollection<TransferQueueItem> QueueView { get; }
 
     public bool HasQueueItems => Queue.Count > 0;
+
+    public ICommand? NavigateToSettingsCommand => _navigationCommands.NavigateToSettingsCommand;
 
     public string UploadButtonText => IsUploading ? "Cancel" : "Start upload";
 

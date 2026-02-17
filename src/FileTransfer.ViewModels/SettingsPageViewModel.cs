@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FileTransfer.Core.Contracts;
@@ -13,6 +14,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
     private readonly IThemeController _themeController;
     private readonly IFolderPickerService _folderPickerService;
     private readonly ITrustOnFirstUseService _trustOnFirstUseService;
+    private readonly NavigationCommandsHolder _navigationCommands;
 
     [ObservableProperty]
     private DeviceInfo? _selectedDevice;
@@ -42,15 +44,19 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
         ILocalDeviceScanner localDeviceScanner,
         IThemeController themeController,
         IFolderPickerService folderPickerService,
-        ITrustOnFirstUseService trustOnFirstUseService)
+        ITrustOnFirstUseService trustOnFirstUseService,
+        NavigationCommandsHolder navigationCommands)
     {
         _settingsService = settingsService;
         _localDeviceScanner = localDeviceScanner;
         _themeController = themeController;
         _folderPickerService = folderPickerService;
         _trustOnFirstUseService = trustOnFirstUseService;
+        _navigationCommands = navigationCommands;
         DetectedDevices = new ObservableCollection<DeviceInfo>();
     }
+
+    public ICommand? NavigateToMainCommand => _navigationCommands.NavigateToMainCommand;
 
     public ObservableCollection<DeviceInfo> DetectedDevices { get; }
 

@@ -9,19 +9,5 @@
         Title="File Transfer App"
         MinWidth="500"
         MinHeight="500">
-    <Grid RowDefinitions="Auto,*">
-        <Border Padding="12"
-                BorderBrush="#404040"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Main"
-                        Command="{Binding NavigateToMainCommand}" />
-                <Button Content="Settings"
-                        Command="{Binding NavigateToSettingsCommand}" />
-            </StackPanel>
-        </Border>
-
-        <ContentControl Grid.Row="1"
-                        Content="{Binding CurrentPageViewModel}" />
-    </Grid>
+    <ContentControl Content="{Binding CurrentPageViewModel}" />
 </Window>
