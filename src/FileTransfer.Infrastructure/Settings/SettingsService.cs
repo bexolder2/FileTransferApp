@@ -1,5 +1,7 @@
 using FileTransfer.Core.Contracts;
 using FileTransfer.Core.Models;
+using System.Net;
+using System.Net.Sockets;
 
 namespace FileTransfer.Infrastructure.Settings;
 
@@ -38,6 +40,7 @@ public sealed class SettingsService : ISettingsService
             && first.MaximumParallelUploads == second.MaximumParallelUploads
             && string.Equals(first.LastSelectedTargetIp, second.LastSelectedTargetIp, StringComparison.Ordinal)
             && first.ThemeMode == second.ThemeMode
+            && first.PreviouslyScannedIps.SequenceEqual(second.PreviouslyScannedIps)
             && first.TrustedPeerFingerprints.SequenceEqual(second.TrustedPeerFingerprints)
             && first.TrustedPeers.Count == second.TrustedPeers.Count
             && first.TrustedPeers.Zip(second.TrustedPeers, (a, b) => a.PeerId == b.PeerId && a.Fingerprint == b.Fingerprint).All(x => x);
@@ -66,9 +69,42 @@ public sealed class SettingsService : ISettingsService
             MaximumParallelUploads = maxParallelUploads,
             LastSelectedTargetIp = settings?.LastSelectedTargetIp,
             ThemeMode = settings?.ThemeMode ?? AppThemeMode.System,
+            PreviouslyScannedIps = NormalizeScannedIps(settings),
             TrustedPeerFingerprints = settings?.TrustedPeerFingerprints?.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
             TrustedPeers = NormalizeTrustedPeers(settings)
         };
+    }
+
+    private static IReadOnlyList<string> NormalizeScannedIps(AppSettings? settings)
+    {
+        if (settings?.PreviouslyScannedIps is null)
+        {
+            return [];
+        }
+
+        List<string> normalized = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
+
+        foreach (string ip in settings.PreviouslyScannedIps)
+        {
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                continue;
+            }
+
+            if (!IPAddress.TryParse(ip, out IPAddress? parsed) || parsed.AddressFamily != AddressFamily.InterNetwork)
+            {
+                continue;
+            }
+
+            string canonical = parsed.ToString();
+            if (seen.Add(canonical))
+            {
+                normalized.Add(canonical);
+            }
+        }
+
+        return normalized;
     }
 
     private static IReadOnlyList<TrustedPeer> NormalizeTrustedPeers(AppSettings? settings)

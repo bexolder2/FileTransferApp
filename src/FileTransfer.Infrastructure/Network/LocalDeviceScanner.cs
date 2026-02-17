@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
 using FileTransfer.Core.Contracts;
 using FileTransfer.Core.Models;
 
@@ -8,6 +9,8 @@ namespace FileTransfer.Infrastructure.Network;
 
 public sealed class LocalDeviceScanner : ILocalDeviceScanner
 {
+    private const int MaxConcurrentProbes = 16;
+
     private readonly TransferProtocolOptions _protocolOptions;
 
     public LocalDeviceScanner(TransferProtocolOptions protocolOptions)
@@ -15,14 +18,16 @@ public sealed class LocalDeviceScanner : ILocalDeviceScanner
         _protocolOptions = protocolOptions;
     }
 
-    public async Task<IReadOnlyList<DeviceInfo>> ScanAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<DeviceInfo>> ScanAsync(CancellationToken cancellationToken, IReadOnlyCollection<string>? additionalCandidateIps = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         List<IPAddress> localIps = NetworkInterface.GetAllNetworkInterfaces()
             .Where(interfaceInfo =>
                 interfaceInfo.OperationalStatus == OperationalStatus.Up
-                && interfaceInfo.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                && interfaceInfo.NetworkInterfaceType != NetworkInterfaceType.Loopback
+                && interfaceInfo.NetworkInterfaceType != NetworkInterfaceType.Tunnel
+                && interfaceInfo.NetworkInterfaceType != NetworkInterfaceType.Unknown)
             .SelectMany(interfaceInfo => interfaceInfo.GetIPProperties().UnicastAddresses)
             .Select(addressInfo => addressInfo.Address)
             .Where(address => address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(address))
@@ -38,42 +43,44 @@ public sealed class LocalDeviceScanner : ILocalDeviceScanner
             }
         }
 
-        List<DeviceInfo> devices = [];
-        SemaphoreSlim semaphore = new(initialCount: 64, maxCount: 64);
-        List<Task> scanTasks = [];
-        foreach (string candidateIp in candidates)
+        if (additionalCandidateIps is not null)
         {
-            if (localIps.Any(ip => ip.ToString() == candidateIp))
+            foreach (string candidateIp in additionalCandidateIps)
             {
-                continue;
+                if (IPAddress.TryParse(candidateIp, out IPAddress? parsed)
+                    && parsed.AddressFamily == AddressFamily.InterNetwork
+                    && !IPAddress.IsLoopback(parsed))
+                {
+                    candidates.Add(parsed.ToString());
+                }
             }
-
-            scanTasks.Add(Task.Run(async () =>
-            {
-                await semaphore.WaitAsync(cancellationToken);
-                try
-                {
-                    if (await ProbeHostAsync(candidateIp, cancellationToken))
-                    {
-                        lock (devices)
-                        {
-                            devices.Add(new DeviceInfo
-                            {
-                                IpAddress = candidateIp,
-                                DisplayName = candidateIp
-                            });
-                        }
-                    }
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            }, cancellationToken));
         }
 
-        await Task.WhenAll(scanTasks);
-        semaphore.Dispose();
+        HashSet<string> localIpStrings = localIps
+            .Select(ip => ip.ToString())
+            .ToHashSet(StringComparer.Ordinal);
+        string[] targets = candidates
+            .Where(candidateIp => !localIpStrings.Contains(candidateIp))
+            .ToArray();
+
+        ConcurrentBag<DeviceInfo> devices = [];
+        ParallelOptions options = new()
+        {
+            MaxDegreeOfParallelism = Math.Min(MaxConcurrentProbes, targets.Length == 0 ? 1 : targets.Length),
+            CancellationToken = cancellationToken
+        };
+
+        await Parallel.ForEachAsync(targets, options, async (candidateIp, ct) =>
+        {
+            if (await ProbeHostAsync(candidateIp, ct))
+            {
+                devices.Add(new DeviceInfo
+                {
+                    IpAddress = candidateIp,
+                    DisplayName = candidateIp
+                });
+            }
+        });
 
         return devices
             .OrderBy(device => device.IpAddress, StringComparer.Ordinal)
@@ -86,7 +93,7 @@ public sealed class LocalDeviceScanner : ILocalDeviceScanner
         try
         {
             using Ping ping = new();
-            PingReply reply = await ping.SendPingAsync(ipAddress, 150);
+            PingReply reply = await ping.SendPingAsync(ipAddress, 120);
             pingReachable = reply.Status == IPStatus.Success;
         }
         catch
@@ -99,7 +106,7 @@ public sealed class LocalDeviceScanner : ILocalDeviceScanner
         {
             using TcpClient client = new();
             using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromMilliseconds(300));
+            timeout.CancelAfter(TimeSpan.FromMilliseconds(180));
             await client.ConnectAsync(ipAddress, _protocolOptions.Port, timeout.Token);
             portOpen = true;
         }

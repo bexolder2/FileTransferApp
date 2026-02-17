@@ -12,6 +12,8 @@ public sealed class AppSettings
 
     public AppThemeMode ThemeMode { get; init; } = AppThemeMode.System;
 
+    public IReadOnlyList<string> PreviouslyScannedIps { get; init; } = [];
+
     public IReadOnlyList<string> TrustedPeerFingerprints { get; init; } = [];
 
     public IReadOnlyList<TrustedPeer> TrustedPeers { get; init; } = [];

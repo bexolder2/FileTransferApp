@@ -34,6 +34,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
 
     private IReadOnlyList<string> _trustedPeerFingerprints = [];
     private IReadOnlyList<TrustedPeer> _trustedPeers = [];
+    private IReadOnlyList<string> _previouslyScannedIps = [];
     private string? _lastSelectedTargetIp;
 
     public SettingsPageViewModel(
@@ -96,8 +97,12 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
         MaximumParallelUploads = settings.MaximumParallelUploads;
         DownloadFolder = settings.DownloadFolder;
         SelectedThemeMode = settings.ThemeMode;
+        _previouslyScannedIps = settings.PreviouslyScannedIps;
         _trustedPeerFingerprints = settings.TrustedPeerFingerprints;
         _trustedPeers = settings.TrustedPeers;
+        PopulateDetectedDevicesFromSavedIps(_previouslyScannedIps);
+        SelectedDevice = DetectedDevices.FirstOrDefault(device =>
+            string.Equals(device.IpAddress, _lastSelectedTargetIp, StringComparison.Ordinal));
 
         _themeController.ApplyTheme(SelectedThemeMode);
     }
@@ -113,7 +118,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            IReadOnlyList<DeviceInfo> devices = await _localDeviceScanner.ScanAsync(cancellationToken);
+            IReadOnlyList<DeviceInfo> devices = await _localDeviceScanner.ScanAsync(cancellationToken, _previouslyScannedIps);
             DetectedDevices.Clear();
             foreach (DeviceInfo device in devices)
             {
@@ -122,6 +127,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
 
             SelectedDevice = DetectedDevices.FirstOrDefault(device =>
                 string.Equals(device.IpAddress, _lastSelectedTargetIp, StringComparison.Ordinal));
+            await SavePreviouslyScannedIpsAsync(devices, cancellationToken);
         }
         finally
         {
@@ -143,16 +149,7 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveAsync(CancellationToken cancellationToken)
     {
-        AppSettings settings = new()
-        {
-            Version = 2,
-            DownloadFolder = DownloadFolder,
-            MaximumParallelUploads = Math.Max(1, MaximumParallelUploads),
-            LastSelectedTargetIp = SelectedDevice?.IpAddress,
-            ThemeMode = SelectedThemeMode,
-            TrustedPeerFingerprints = _trustedPeerFingerprints,
-            TrustedPeers = _trustedPeers
-        };
+        AppSettings settings = CreateSettingsSnapshot(SelectedDevice?.IpAddress, _previouslyScannedIps);
 
         _lastSelectedTargetIp = settings.LastSelectedTargetIp;
         await _settingsService.SaveAsync(settings, cancellationToken);
@@ -180,5 +177,56 @@ public sealed partial class SettingsPageViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSystemThemeSelected));
         OnPropertyChanged(nameof(IsLightThemeSelected));
         OnPropertyChanged(nameof(IsDarkThemeSelected));
+    }
+
+    private async Task SavePreviouslyScannedIpsAsync(IReadOnlyList<DeviceInfo> detectedDevices, CancellationToken cancellationToken)
+    {
+        HashSet<string> mergedIps = new(_previouslyScannedIps, StringComparer.Ordinal);
+        foreach (DeviceInfo detectedDevice in detectedDevices)
+        {
+            mergedIps.Add(detectedDevice.IpAddress);
+        }
+
+        string[] normalizedMergedIps = mergedIps
+            .OrderBy(ip => ip, StringComparer.Ordinal)
+            .Take(512)
+            .ToArray();
+
+        if (_previouslyScannedIps.SequenceEqual(normalizedMergedIps, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        _previouslyScannedIps = normalizedMergedIps;
+        AppSettings updated = CreateSettingsSnapshot(_lastSelectedTargetIp, _previouslyScannedIps);
+        await _settingsService.SaveAsync(updated, cancellationToken);
+    }
+
+    private AppSettings CreateSettingsSnapshot(string? lastSelectedTargetIp, IReadOnlyList<string> previouslyScannedIps)
+    {
+        return new AppSettings
+        {
+            Version = 2,
+            DownloadFolder = DownloadFolder,
+            MaximumParallelUploads = Math.Max(1, MaximumParallelUploads),
+            LastSelectedTargetIp = lastSelectedTargetIp,
+            ThemeMode = SelectedThemeMode,
+            PreviouslyScannedIps = previouslyScannedIps,
+            TrustedPeerFingerprints = _trustedPeerFingerprints,
+            TrustedPeers = _trustedPeers
+        };
+    }
+
+    private void PopulateDetectedDevicesFromSavedIps(IReadOnlyList<string> ips)
+    {
+        DetectedDevices.Clear();
+        foreach (string ip in ips.OrderBy(ip => ip, StringComparer.Ordinal))
+        {
+            DetectedDevices.Add(new DeviceInfo
+            {
+                IpAddress = ip,
+                DisplayName = ip
+            });
+        }
     }
 }

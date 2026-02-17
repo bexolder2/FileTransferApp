@@ -17,6 +17,7 @@ public sealed class SettingsServiceTests
         Assert.Equal(2, settings.Version);
         Assert.Equal(2, settings.MaximumParallelUploads);
         Assert.EndsWith("Downloads", settings.DownloadFolder, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(settings.PreviouslyScannedIps);
         Assert.Empty(settings.TrustedPeers);
     }
 
@@ -33,6 +34,7 @@ public sealed class SettingsServiceTests
             MaximumParallelUploads = 0,
             LastSelectedTargetIp = "127.0.0.1",
             ThemeMode = AppThemeMode.Dark,
+            PreviouslyScannedIps = ["10.0.0.9"],
             TrustedPeerFingerprints = [],
             TrustedPeers = []
         }, CancellationToken.None);
@@ -66,6 +68,26 @@ public sealed class SettingsServiceTests
         Assert.Single(settings.TrustedPeers);
         Assert.Equal("10.0.0.5", settings.TrustedPeers[0].PeerId);
         Assert.Single(settings.TrustedPeerFingerprints);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenScannedIpsContainInvalidOrDuplicates_NormalizesToDistinctIpv4()
+    {
+        InMemorySettingsStore store = new(new AppSettings
+        {
+            Version = 2,
+            DownloadFolder = "C:\\Temp",
+            MaximumParallelUploads = 2,
+            ThemeMode = AppThemeMode.System,
+            PreviouslyScannedIps = ["  ", "10.0.0.20", "10.0.0.20", "bad-ip", "::1", "192.168.1.14"],
+            TrustedPeerFingerprints = [],
+            TrustedPeers = []
+        });
+        SettingsService service = new(store);
+
+        AppSettings settings = await service.GetAsync(CancellationToken.None);
+
+        Assert.Equal(["10.0.0.20", "192.168.1.14"], settings.PreviouslyScannedIps);
     }
 
     private sealed class InMemorySettingsStore : ISettingsStore
