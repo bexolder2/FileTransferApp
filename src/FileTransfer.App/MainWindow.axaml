@@ -7,6 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
         x:Class="FileTransfer.App.MainWindow"
         Title="File Transfer App"
+        Icon="avares://FileTransfer.App/file-transfer.ico"
         MinWidth="500"
         MinHeight="500">
     <ContentControl Content="{Binding CurrentPageViewModel}" />
