@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="File Transfer App"
+  <Package Id="FileTransfer.App"
+           Name="File Transfer App"
            Manufacturer="File Transfer Team"
            Version="1.0.0"
            UpgradeCode="A8C3D0E9-9854-4C13-8F66-E2C39A3AA201"
@@ -9,7 +10,7 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of File Transfer App is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
-    <StandardDirectory Id="ProgramFilesFolder">
+    <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER" Name="File Transfer App" />
     </StandardDirectory>
 
@@ -23,17 +24,6 @@
       <ComponentRef Id="ProtocolRegistration" />
     </Feature>
   </Package>
-
-  <Fragment>
-    <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="AppExeComponent" Guid="8A60B2A7-D39E-4E2E-B3CC-6D5EABBE6601">
-        <File Id="AppExeFile" Source="$(var.PublishDir)\FileTransfer.App.exe" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
-    <ComponentGroup Id="AppFiles">
-      <ComponentRef Id="AppExeComponent" />
-    </ComponentGroup>
-  </Fragment>
 
   <Fragment>
     <DirectoryRef Id="ProgramMenuDir">
@@ -53,10 +43,10 @@
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="ProtocolRegistration" Guid="89A0C991-7E21-4D44-B7F6-E52CB0A35254">
         <RegistryKey Root="HKCU" Key="Software\Classes\filetransfer">
-          <RegistryValue Name="" Value="URL:File Transfer Protocol" Type="string" />
+          <RegistryValue Value="URL:File Transfer Protocol" Type="string" />
           <RegistryValue Name="URL Protocol" Value="" Type="string" />
           <RegistryKey Key="shell\open\command">
-            <RegistryValue Name="" Value='"[INSTALLFOLDER]FileTransfer.App.exe" "%1"' Type="string" />
+            <RegistryValue Value='"[INSTALLFOLDER]FileTransfer.App.exe" "%1"' Type="string" />
           </RegistryKey>
         </RegistryKey>
         <RegistryValue Root="HKCU" Key="Software\FileTransferApp" Name="ProtocolRegistered" Type="integer" Value="1" KeyPath="yes" />

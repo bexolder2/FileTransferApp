@@ -1,0 +1,25 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+  <PropertyGroup Label="Globals">
+    <DefineConstants Condition="'$(PublishDir)' != ''">PublishDir=$(PublishDir)</DefineConstants>
+    <InstallerPlatform Condition="'$(InstallerPlatform)' == ''">x64</InstallerPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\bin\$(Configuration)\$(InstallerPlatform)\</OutputPath>
+    <OutputName>file-transfer-app-windows-$(InstallerPlatform)</OutputName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <HarvestDirectory Include="$(PublishDir)" Condition="'$(PublishDir)' != ''">
+      <ComponentGroupName>AppFiles</ComponentGroupName>
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <SuppressRegistry>true</SuppressRegistry>
+      <SuppressCom>true</SuppressCom>
+      <PreprocessorVariable>PublishDir</PreprocessorVariable>
+    </HarvestDirectory>
+    <BindPath Include="$(PublishDir)" Condition="'$(PublishDir)' != ''" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Heat" />
+  </ItemGroup>
+</Project>
